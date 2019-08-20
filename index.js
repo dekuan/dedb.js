@@ -1,4 +1,4 @@
-const DeDbConnections		= require( './src/dedb_connections' );
+const DeDb	= require( './src/DeDb' );
 
 
 
@@ -8,5 +8,5 @@ const DeDbConnections		= require( './src/dedb_connections' );
  */
 module.exports	=
 {
-	DeDb	: DeDbConnections,
+	DeDb	: DeDb,
 };

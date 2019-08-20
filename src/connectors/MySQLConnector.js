@@ -1,6 +1,6 @@
 const { EventEmitter }			= require( 'events' );
 const _mysql				= require( 'mysql' );
-const DbConstants			= require( '../dedb_constants' );
+const Constants				= require( '../constants' );
 const { DeUtilsCore }			= require( 'deutils.js' );
 
 
@@ -9,9 +9,9 @@ const { DeUtilsCore }			= require( 'deutils.js' );
 
 
 /**
- *	@class	DeDbMySQLConnector
+ *	@class	MySQLConnector
  */
-class DeDbMySQLConnector extends EventEmitter
+class MySQLConnector extends EventEmitter
 {
 	/**
 	 *	@constructor
@@ -49,6 +49,7 @@ class DeDbMySQLConnector extends EventEmitter
 				let nSuccessCount	= 0;
 
 				//
+				//	@PoolCluster
 				//	create a pool cluster
 				//
 				this.m_oPoolCluster	= _mysql.createPoolCluster();
@@ -60,7 +61,7 @@ class DeDbMySQLConnector extends EventEmitter
 					let oConfig	= Object.assign
 					(
 						{},
-						{ connectionLimit : DbConstants.MAX_POOL_CONNECTION_LIMIT },
+						{ connectionLimit : Constants.MAX_POOL_CONNECTION_LIMIT },
 						oOptions[ sNodeName ]
 					);
 					if ( this.isValidMySQLConfig( oConfig ) )
@@ -87,7 +88,7 @@ class DeDbMySQLConnector extends EventEmitter
 	 *	get connection
 	 *
 	 *	@param	{string?}	sGroup
-	 *	@return {Promise<{}>}	oConnection
+	 *	@return {Promise<{Connection}>}
 	 */
 	getConnection( sGroup )
 	{
@@ -159,6 +160,6 @@ class DeDbMySQLConnector extends EventEmitter
 
 /**
  *	@exports
- *	@type {DeDbMySQLConnector}
+ *	@type {MySQLConnector}
  */
-module.exports	= DeDbMySQLConnector;
+module.exports	= MySQLConnector;

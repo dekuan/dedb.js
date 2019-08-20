@@ -23,12 +23,19 @@ describe( 'DeDb.test', () =>
 
 		try
 		{
-			let oOkPacket = await oConnections.query
+			let oOkPacketConnections = await oConnections.query
 			(
 				'DROP TABLE IF EXISTS test_connections',
 				[]
 			);
-			assert.ok( DeUtilsCore.isPlainObjectWithKeys( oOkPacket, 'protocol41' ) && true === oOkPacket[ 'protocol41' ] );
+			let oOkPacketTransaction = await oConnections.query
+			(
+				'DROP TABLE IF EXISTS test_transaction',
+				[]
+			);
+
+			assert.ok( DeUtilsCore.isPlainObjectWithKeys( oOkPacketConnections, 'protocol41' ) && true === oOkPacketConnections[ 'protocol41' ] );
+			assert.ok( DeUtilsCore.isPlainObjectWithKeys( oOkPacketTransaction, 'protocol41' ) && true === oOkPacketTransaction[ 'protocol41' ] );
 		}
 		catch ( vException )
 		{
@@ -58,13 +65,36 @@ describe( 'DeDb.test', () =>
 		}
 	});
 
+	it( 'should create a table named test_transaction', async () =>
+	{
+		const oConnections	= new DeDb( DB_CONFIGURATION );
+		const sCreateTable	= 'CREATE TABLE `test_transaction` (\n' +
+			'  `tt_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n' +
+			'  `tt_mid` binary(16) DEFAULT NULL,\n' +
+			'  `tc_id` bigint(20) unsigned NOT NULL,\n' +
+			'  `tt_cdate` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n' +
+			'  `tt_mdate` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n' +
+			'  PRIMARY KEY (`tt_id`)\n' +
+			') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci';
+
+		try
+		{
+			let oOkPacket = await oConnections.query( sCreateTable, [] );
+			assert.ok( DeUtilsCore.isPlainObjectWithKeys( oOkPacket, 'protocol41' ) && true === oOkPacket[ 'protocol41' ] );
+		}
+		catch ( vException )
+		{
+			console.error( vException );
+		}
+	});
+
 	it( 'table named test_connections should exists', async () =>
 	{
 		const oConnections	= new DeDb( DB_CONFIGURATION );
 
 		try
 		{
-			let arrResultSelect = await oConnections.query
+			let arrResultSelect = await oConnections.select
 			(
 				"SELECT * FROM information_schema.tables WHERE table_schema = ? AND table_name = ? LIMIT 1;",
 				[ TEST_DATABASE_NAME, TEST_TABLE_NAME ]
@@ -86,18 +116,12 @@ describe( 'DeDb.test', () =>
 		try
 		{
 			const oConnections	= new DeDb( DB_CONFIGURATION );
-			let oOkPacket		= await oConnections.query
+			let nInsertId		= await oConnections.insert
 			(
 				"INSERT INTO test_connections( tc_mid ) VALUES( UUID_TO_BIN( UUID() ) )",
 				[]
 			);
-			assert.ok
-			(
-				DeUtilsCore.isPlainObjectWithKeys( oOkPacket, [ 'affectedRows', 'insertId', 'protocol41' ] ) &&
-				oOkPacket[ 'affectedRows' ] >= 1 &&
-				oOkPacket[ 'insertId' ] > 0 &&
-				true === oOkPacket[ 'protocol41' ]
-			);
+			assert.ok( nInsertId > 0 );
 		}
 		catch ( vException )
 		{
@@ -111,7 +135,7 @@ describe( 'DeDb.test', () =>
 		try
 		{
 			const oConnections	= new DeDb( DB_CONFIGURATION );
-			let arrResults		= await oConnections.query
+			let arrResults		= await oConnections.select
 			(
 				"SELECT tc_id, BIN_TO_UUID( tc_mid ) AS t_tc_mid, tc_cdate, tc_mdate FROM test_connections LIMIT 1",
 				[]
@@ -134,4 +158,69 @@ describe( 'DeDb.test', () =>
 		}
 	});
 
+
+	it( 'should perform a transactions on table test_connections and test_transaction', async () =>
+	{
+		return new Promise( async ( pfnR, pfnReject ) =>
+		{
+			try
+			{
+				const oDeDb	= new DeDb( DB_CONFIGURATION );
+				const oConnect	= await oDeDb.getConnection();
+				oConnect.beginTransaction( ( err ) =>
+				{
+					if ( err )
+					{
+						throw err;
+					}
+
+					//	...
+					oConnect.query( 'INSERT INTO test_connections( tc_mid ) VALUES( UUID_TO_BIN( UUID() ) )', ( sError, oResults, arrFields ) =>
+					{
+						if ( sError )
+						{
+							return oConnect.rollback( () =>
+							{
+								throw sError;
+							});
+						}
+
+						let nNewTcId = oResults[ 'insertId' ];
+						oConnect.query( 'INSERT INTO test_transaction( tt_mid, tc_id ) VALUES( UUID_TO_BIN( UUID() ), ? )', nNewTcId, ( sError, arrResults, arrFields ) =>
+						{
+							if ( sError )
+							{
+								return oConnect.rollback( () =>
+								{
+									throw sError;
+								});
+							}
+
+							//	...
+							oConnect.commit( ( err ) =>
+							{
+								if ( err )
+								{
+									return oConnect.rollback( () =>
+									{
+										throw err;
+									});
+								}
+
+								//	...
+								assert.ok( true );
+
+								//	...
+								pfnR( null );
+							});
+						});
+					});
+				});
+			}
+			catch ( vException )
+			{
+				pfnReject( vException );
+			}
+		});
+	});
 });

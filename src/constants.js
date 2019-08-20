@@ -1,7 +1,7 @@
 /**
  *	@constants
  */
-const DbConstants	=
+const Constants	=
 {
 	/**
 	 *	max pool connection limit
@@ -20,4 +20,4 @@ const DbConstants	=
 /**
  *	@constants
  */
-module.exports	= DbConstants;
+module.exports	= Constants;
