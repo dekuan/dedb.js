@@ -81,9 +81,11 @@ class DeDb extends EventEmitter
 	{
 		return new Promise( async ( pfnR, pfnReject ) =>
 		{
+			let oConnection	= null;
+
 			try
 			{
-				let oConnection	= await this.getConnection();
+				oConnection	= await this.getConnection();
 				let arrResults	= await this.selectWithConnection
 				(
 					oConnection,
@@ -98,6 +100,14 @@ class DeDb extends EventEmitter
 			catch ( vException )
 			{
 				pfnReject( vException );
+			}
+			finally
+			{
+				if ( oConnection )
+				{
+					//	when done with the connection, release it.
+					oConnection.release();
+				}
 			}
 		});
 	}
@@ -153,9 +163,11 @@ class DeDb extends EventEmitter
 	{
 		return new Promise( async ( pfnR, pfnReject ) =>
 		{
+			let oConnection	= null;
+
 			try
 			{
-				let oConnection	= await this.getConnection();
+				oConnection	= await this.getConnection();
 				let nInsertId	= await this.insertWithConnection( oConnection, sQuery, arrBindings, nTimeoutInMilliseconds );
 
 				//	...
@@ -164,6 +176,14 @@ class DeDb extends EventEmitter
 			catch ( vException )
 			{
 				pfnReject( vException );
+			}
+			finally
+			{
+				if ( oConnection )
+				{
+					//	when done with the connection, release it.
+					oConnection.release();
+				}
 			}
 		});
 	}
@@ -217,10 +237,12 @@ class DeDb extends EventEmitter
 	{
 		return new Promise( async ( pfnR, pfnReject ) =>
 		{
+			let oConnection	= null;
+
 			try
 			{
-				let oConnection		= await this.getConnection();
-				let nAffectedRows	= await this.updateWithConnection
+				oConnection = await this.getConnection();
+				let nAffectedRows = await this.updateWithConnection
 				(
 					oConnection,
 					sQuery,
@@ -234,6 +256,14 @@ class DeDb extends EventEmitter
 			catch ( vException )
 			{
 				pfnReject( vException );
+			}
+			finally
+			{
+				if ( oConnection )
+				{
+					//	when done with the connection, release it.
+					oConnection.release();
+				}
 			}
 		});
 	}
@@ -286,10 +316,12 @@ class DeDb extends EventEmitter
 	{
 		return new Promise( async ( pfnR, pfnReject ) =>
 		{
+			let oConnection	= null;
+
 			try
 			{
-				let oConnection		= await this.getConnection();
-				let nAffectedRows	= await this.deleteWithConnection( oConnection, sQuery, arrBindings, nTimeoutInMilliseconds );
+				oConnection = await this.getConnection();
+				let nAffectedRows = await this.deleteWithConnection( oConnection, sQuery, arrBindings, nTimeoutInMilliseconds );
 
 				//	...
 				pfnR( nAffectedRows );
@@ -297,6 +329,14 @@ class DeDb extends EventEmitter
 			catch ( vException )
 			{
 				pfnReject( vException );
+			}
+			finally
+			{
+				if ( oConnection )
+				{
+					//	when done with the connection, release it.
+					oConnection.release();
+				}
 			}
 		});
 	}
@@ -349,9 +389,11 @@ class DeDb extends EventEmitter
 	{
 		return new Promise( async ( pfnR, pfnReject ) =>
 		{
+			let oConnection	= null;
+
 			try
 			{
-				let oConnection	= await this.getConnection();
+				oConnection	= await this.getConnection();
 				let vResults	= await this.queryWithConnection( oConnection, sQuery, arrBindings, nTimeoutInMilliseconds );
 
 				//	...
@@ -360,6 +402,14 @@ class DeDb extends EventEmitter
 			catch ( vException )
 			{
 				pfnReject( vException );
+			}
+			finally
+			{
+				if ( oConnection )
+				{
+					//	when done with the connection, release it.
+					oConnection.release();
+				}
 			}
 		});
 	}
@@ -417,81 +467,6 @@ class DeDb extends EventEmitter
 					//	fields will contain information about the returned results fields (if any)
 					//
 					pfnR( vResults );
-				});
-			}
-			catch ( vException )
-			{
-				pfnReject( vException );
-			}
-		});
-	}
-
-	transaction()
-	{
-		return new Promise( async ( pfnR, pfnReject ) =>
-		{
-			try
-			{
-				let oConnection = await this.getConnection();
-				if ( ! oConnection )
-				{
-					return pfnReject( `# failed to getConnection` );
-				}
-
-				//	...
-				let pfnQuery = ( sQuery, arrBindings, nTimeoutInMilliseconds ) =>
-				{
-					return new Promise( async ( pfnQueryR, pfnQueryReject ) =>
-					{
-						try
-						{
-							let vResult = await this.queryWithConnection
-							(
-								oConnection,
-								sQuery,
-								arrBindings,
-								nTimeoutInMilliseconds
-							);
-							pfnQueryR( vResult );
-						}
-						catch ( vException )
-						{
-							oConnection.rollback( () =>
-							{
-								pfnQueryReject( vException );
-							});
-						}
-					});
-				};
-				let pfnCommit = () =>
-				{
-					return new Promise( async ( pfnR, pfnReject ) =>
-					{
-						try
-						{
-							oConnection.commit( err =>
-							{
-								if ( err )
-								{
-									return oConnection.rollback( () =>
-									{
-										throw err;
-									});
-								}
-							});
-						}
-						catch ( vException )
-						{
-							pfnReject( vException );
-						}
-					});
-				};
-
-				//	...
-				pfnR
-				({
-					query	: pfnQuery,
-					commit	: pfnCommit,
 				});
 			}
 			catch ( vException )

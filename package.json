@@ -1,7 +1,7 @@
 {
 	"name": "dedb.js",
-	"version": "1.0.0",
-	"description": "Utils in Node.js by DeKuan, Inc.",
+	"version": "1.0.2",
+	"description": "Database Utils in Node.js by DeKuan, Inc.",
 	"author": "XING <dev@dekuan.org>",
 	"main": "index.js",
 	"scripts": {},
@@ -20,8 +20,7 @@
 		"rotating-file-stream": "^1.4.0",
 		"deutils.js": ">=1.0.0"
 	},
-	"devDependencies":
-	{
+	"devDependencies": {
 		"debug": "^4.1.1",
 		"assert": "^1.4.1",
 		"mocha": "^5.2.0",
